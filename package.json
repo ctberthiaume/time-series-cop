@@ -1,0 +1,29 @@
+{
+  "name": "timeseries-cop",
+  "version": "1.0.0",
+  "description": "Time wrangler",
+  "main": "src/lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "lineprotocol-standard-format": "src/bin/lineprotocol-standard-format.js"
+  },
+  "author": "Chris Berthiaume <chrisbee@uw.edu>",
+  "license": "ISC",
+  "dependencies": {
+    "csv-string": "^2.3.2",
+    "eol-fix-stream": "^1.0.0",
+    "highland": "^2.10.5",
+    "json-to-influxdb-line": "^0.2.0",
+    "latlon-geohash": "^1.1.0",
+    "lodash": "^4.17.4",
+    "moment": "^2.18.1",
+    "validator": "^7.0.0",
+    "yargs": "^7.1.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.4.1"
+  }
+}
