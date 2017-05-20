@@ -26,12 +26,13 @@ tscop
     start: 1,
     delimiter:'\t'
   })
+  .filter(o => o.fields.length && o.fields[0] !== 'Date') // ignore header line
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))
   .doto(o => {
     o.doc.time = moment.utc(`${o.doc.dateString}T${o.doc.timeString}Z`);
     o.doc.cruise = argv.cruise;
   })
-  .through(tscop.docToLineProtocol(argv.measurement, outputSchema, false))  // can be in descending order because that's how cyberpower data is
+  .through(tscop.docToLineProtocol(argv.measurement, outputSchema))
   .stopOnError(err => console.log(err.message))
   .pipe(fs.createWriteStream(argv.output));

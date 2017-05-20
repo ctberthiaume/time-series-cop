@@ -125,7 +125,7 @@ describe('Lines', () => {
 });
 
 describe('Fields', () => {
-  it('split on whitespace', done => {
+  it('should split on whitespace', done => {
     tscop
       .fieldStream({
         stream: ['a b    \tc\n'],
@@ -141,7 +141,7 @@ describe('Fields', () => {
         done();
       });
   });
-  it('split on arbitrary string', done => {
+  it('should split on arbitrary string', done => {
     tscop
       .fieldStream({
         stream: ['a\t b\tc\n'],
@@ -157,7 +157,7 @@ describe('Fields', () => {
         done();
       });
   });
-  it('create empty field array for blank line', done => {
+  it('should create empty field array for blank line', done => {
     tscop
       .fieldStream({
         stream: ['\n'],
@@ -170,7 +170,21 @@ describe('Fields', () => {
         done();
       });
   });
-  it('skip recordIndex increment when skipping lines', done => {
+  it('should handle initial blank field followed by non-blank fields', done => {
+    tscop
+      .fieldStream({
+        stream: [',foo,bar\n'],
+        delimiter: ',',
+        dropInternalBlank: false,
+        dropFinalBlank: false
+      })
+      .toArray(x => {
+        x[0].fields.should.have.length(3);
+        x[0].fields.should.deep.equal(['', 'foo', 'bar']);
+        done();
+      });
+  });
+  it('should skip recordIndex increment when skipping lines', done => {
     tscop
       .fieldStream({
         stream: ['line1\n', '\n', 'line3\n'],

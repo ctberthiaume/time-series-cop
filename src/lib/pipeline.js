@@ -81,17 +81,19 @@ function fieldStream({
   // Turn line text into array of field values
   if (delimiter === 'whitespace') {
     pipe = pipe.doto(o => {
-      fields = splitOnWhitespace(o.text)
-      // Empty lines become single item arrays of empty string
-      // Turn into empty array
-      o.fields = fields.length && fields[0] === '' ? [] : fields;
+      if (o.text === '') {
+        o.fields = [];
+      } else {
+        o.fields = splitOnWhitespace(o.text);
+      }
     });
   } else {
     pipe = pipe.doto(o => {
-      fields = CSV.parse(o.text, delimiter)[0];
-      // Empty lines become single item arrays of empty string
-      // Turn into empty array
-      o.fields = fields.length && fields[0] === '' ? [] : fields;
+      if (o.text === '') {
+        o.fields = [];
+      } else {
+        o.fields = CSV.parse(o.text, delimiter)[0];
+      }
     });
   }
   pipe = pipe.doto(o => o.recordIndex = i++);
