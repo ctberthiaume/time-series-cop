@@ -3,7 +3,7 @@ const should = chai.should();
 const validation = require('../src/lib/validation');
 
 describe('Schema', () => {
-  it('should normalize to lowercase', done => {
+  it('should normalize types to lowercase', done => {
     const schema = {
       'prop1': 'TeXt',
       'prop2': 'text'

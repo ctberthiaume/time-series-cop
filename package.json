@@ -1,13 +1,14 @@
 {
-  "name": "timeseries-cop",
-  "version": "1.0.0",
+  "name": "time-series-cop",
+  "version": "1.0.2",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "lineprotocol-standard-format": "src/bin/lineprotocol-standard-format.js"
+    "lineprotocol-standard-format.js": "src/bin/lineprotocol-standard-format.js",
+    "lineprotocol-cyberpower-ups-dataLog.js": "src/bin/lineprotocol-cyberpower-ups-dataLog.js"
   },
   "author": "Chris Berthiaume <chrisbee@uw.edu>",
   "license": "ISC",
