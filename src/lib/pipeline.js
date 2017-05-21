@@ -3,6 +3,7 @@ const H = require('highland');
 const CSV = require('csv-string');
 const _ = require('lodash');
 const eolFix = require('eol-fix-stream');
+const Influx = require('influx');
 const JsonInfluxDbStream = require('json-to-influxdb-line').JsonInfluxDbStream;
 const validation = require('./validation');
 const TimeSeriesCopError = require('./error').TimeSeriesCopError;
@@ -247,6 +248,139 @@ function docToLineProtocol(measurement, schema, ensureSorted=true) {
   };
 }
 exports.docToLineProtocol = docToLineProtocol;
+
+/**
+ * Create a Highland stream transform function to turn each object into a point
+ * ready for writing to InfluxDB. Each input object should contain an object to
+ * convert under the 'doc' property. This nested object must contain a time
+ * property that's either a Javascript Date object or epoch milliseconds. This
+ * time property is assumed and should not be described by the schema.
+ * @param {string} measurement InfluxDB measurement name
+ * @param {object} schema Object with key,value of property,type where the
+ * properties dictate which parts of each input 'doc' object are included in
+ * the output point object, and their types (category, text, float,
+ * integer,boolean). Category values become InfluxDB tags and all other values
+ * become fields. Should not contain a time property.
+ * @returns {Object} Highland stream transform function for use with through()
+ */
+function prepDocForInfluxDB(measurement, schema) {
+  // Validate schema types
+  const schemaValidation = validation.validateSchema(schema);
+  if (schemaValidation.error) {
+    throw new TimeSeriesCopError(`${validation.errorPrefix} Invalid type '${schemaValidation.error}'`);
+  }
+  schema = schemaValidation.schema;  // set validated, case-normalized schema
+
+  return (stream) => {
+    return stream
+      .map(o => {
+        const fields = {}, tags = {};
+        let time;
+
+        Object.keys(o.doc).forEach(k => {
+          // Only add properties which have defined values
+          if (o.doc[k] !== null && o.doc[k] !== NaN && o.doc[k] !== undefined) {
+            switch (schema[k]) {
+              case 'category':
+                tags[k] = o.doc[k];
+                break;
+              case 'time':
+                time = +o.doc[k];  // moment, Date, or epoch ms
+                break;
+              default:
+                fields[k] = o.doc[k];
+                break;
+            }
+          }
+        });
+
+        // If no fields present, mark missing data with 'influxMissingData' field
+        if (_.keys(fields).length === 0) {
+          fields.influxMissingData = true;
+        }
+
+        // Timestamp must be present
+        if (time === undefined) {
+          throw new TimeSeriesCopError(`${validation.errorPrefix} time value missing from line ${o.lineIndex + 1}`);
+        }
+
+        return { measurement, fields, tags, timestamp: time };
+      });
+  };
+}
+exports.prepDocForInfluxDB = prepDocForInfluxDB;
+
+/**
+ * Create a Highland stream transform function to turn batch and sort point
+ * objects before writing them to an InfluxDB database. Each input object
+ * should be an object ready to be passed to the Node InfluxDB driver's
+ * writePoints method as a single record, with a timestamp.
+ * @param {string} measurement InfluxDB measurement name
+ * @param {object} schema Object with key,value of property,type where the
+ * properties dictate which parts of each input 'doc' object are included in
+ * the output point object, and their types (category, text, float,
+ * integer,boolean). Category values become InfluxDB tags and all other values
+ * become fields. Should not contain a time property.
+ * @param {string} host InfluxDB host name
+ * @param {string} database InfluxDB database name
+ * @param {string} [batchSize=10000] How many points to write at a time
+ * @returns {Object} Highland stream transform function for use with through()
+ */
+function writeDocsToInfluxDB({
+  measurement=null,
+  schema=null,
+  host=null,
+  database=null,
+  batchSize=10000
+} = {}) {
+  // Validate schema types
+  const schemaValidation = validation.validateSchema(schema);
+  if (schemaValidation.error) {
+    throw new TimeSeriesCopError(`${validation.errorPrefix} Invalid type '${schemaValidation.error}'`);
+  }
+  schema = schemaValidation.schema;  // set validated, case-normalized schema
+  const influx = new Influx.InfluxDB({
+    host,
+    database,
+    schema: [
+      schema2InfluxSchema(schema, measurement)
+    ]
+  });
+
+  return (stream) => {
+    return stream
+      .batch(batchSize)
+      .map(points => points.sort((a, b) => a.timestamp - b.timestamp))
+      .flatMap(points => H(influx.writePoints(points, { precision: 'ms' })));
+  };
+}
+exports.writeDocsToInfluxDB = writeDocsToInfluxDB;
+
+function schema2InfluxSchema(schema, measurement) {
+  influxSchema = { measurement, tags: [], fields: {} };
+  _.keys(schema).forEach(k => {
+    switch (schema[k]) {
+      case 'text':
+        influxSchema.fields[k] = Influx.FieldType.STRING
+        break;
+      case 'category':
+        influxSchema.tags.push(k);
+        break;
+      case 'integer':
+        influxSchema.fields[k] = Influx.FieldType.INTEGER
+        break;
+      case 'float':
+        influxSchema.fields[k] = Influx.FieldType.FLOAT
+        break;
+      case 'boolean':
+        influxSchema.fields[k] = Influx.FieldType.BOOLEAN
+        break;
+    }
+  });
+  // If no fields present, mark missing data with 'influxMissingData' field
+  influxSchema.fields.influxMissingData = Influx.FieldType.BOOLEAN;
+  return influxSchema;
+}
 
 /**
  * Handle empty lines.

@@ -22,6 +22,12 @@ function standardCli() {
     .alias('o', 'output')
     .nargs('o', 1)
     .default('o', '-')
+    .describe('H', 'InfluxDB hostname')
+    .alias('H', 'host')
+    .nargs('H', 1)
+    .describe('d', 'InfluxDB database name')
+    .alias('d', 'db')
+    .nargs('d', 1)
     .demandOption(['i'])
     .argv;
   return argv;
@@ -48,6 +54,12 @@ function cli() {
     .alias('o', 'output')
     .nargs('o', 1)
     .default('o', '-')
+    .describe('H', 'InfluxDB hostname')
+    .alias('H', 'host')
+    .nargs('H', 1)
+    .describe('d', 'InfluxDB database name')
+    .alias('d', 'db')
+    .nargs('d', 1)
     .demandOption(['i', 'm', 'c'])
     .argv;
   return argv;

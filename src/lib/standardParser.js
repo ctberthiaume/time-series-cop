@@ -14,6 +14,14 @@ function parseStandardFile(inputStream, outputStream, delimiter='\t') {
 }
 exports.parseStandardFile = parseStandardFile;
 
+function parseStandardFileToDB(inputStream, host, db, delimiter='\t') {
+  const inputStream2 = fs.createReadStream(inputStream.path, {encoding: 'utf8'});
+  return getStandardHeader(inputStream, delimiter)
+    .then(header => validateStandardHeader(header))
+    .then(header => parseStandardBodyToDB(inputStream2, header, host, db, delimiter));
+}
+exports.parseStandardFileToDB = parseStandardFileToDB;
+
 function getStandardHeader(inputStream, delimiter='\t') {
   let headerKeys = {
     0: 'measurement',
@@ -66,9 +74,11 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
     const outputSchema = _.zipObject(header.headers.data, header.types.data);
     outputSchema.cruise = 'category';
 
+    let count = 0;
+
     // Resolve successfully when we finish writing line protocol output
     outputStream.on('finish', () => {
-      resolve('success');
+      resolve('Success. Wrote ' + count + ' points.');
     });
 
     try {
@@ -85,10 +95,9 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
         .doto(o => {
           o.doc.cruise = header.cruise.data;
         })
+        .doto(x => count++)
         .through(pipeline.docToLineProtocol(header.measurement.data, outputSchema))
-        .stopOnError(err => {
-          reject(err);
-        })
+        .stopOnError(err => reject(err))
         .pipe(outputStream);
     } catch (err) {
       // Catch any errors when we build the pipeline
@@ -98,6 +107,46 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
   return p;
 }
 exports.parseStandardBody = parseStandardBody;
+
+function parseStandardBodyToDB(inputStream, header, host, db, delimiter='\t') {
+  const p = new Promise((resolve, reject) => {
+    // Now that we have info from header section, parse data lines
+    const schema = _.zipObject(header.headers.data, header.types.data);
+    const outputSchema = _.zipObject(header.headers.data, header.types.data);
+    outputSchema.cruise = 'category';
+    let count = 0;
+    try {
+      pipeline
+        .fieldStream({
+          stream: inputStream,
+          delimiter: delimiter,
+          start: 7,
+          dropInternalBlank: false,
+          dropFinalBlank: true
+        })
+        .through(pipeline.fieldsToDoc(header.headers.data))
+        .through(pipeline.validateDoc(schema, true))
+        .doto(o => {
+          o.doc.cruise = header.cruise.data;
+        })
+        .through(pipeline.prepDocForInfluxDB(header.measurement.data, outputSchema))
+        .doto(x => count++)
+        .through(pipeline.writeDocsToInfluxDB({
+          measurement: header.measurement.data,
+          schema: outputSchema,
+          host: host,
+          database: db
+        }))
+        .stopOnError(err => reject(err))
+        .done(() => resolve('Success. Wrote ' + count + ' points.'));
+    } catch (err) {
+      // Catch any errors when we build the pipeline
+      reject(err);
+    }
+  });
+  return p;
+}
+exports.parseStandardBodyToDB = parseStandardBodyToDB;
 
 function validateStandardHeader(origheader) {
   const header = _.cloneDeep(origheader);

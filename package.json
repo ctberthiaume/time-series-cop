@@ -3,9 +3,9 @@
   "version": "1.0.2",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
-  "repository" : {
-    "type" : "git",
-    "url" : "https://github.com/ctberthiaume/time-series-cop.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ctberthiaume/time-series-cop.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -20,6 +20,7 @@
     "csv-string": "^2.3.2",
     "eol-fix-stream": "^1.0.0",
     "highland": "^2.10.5",
+    "influx": "^5.0.0-alpha.4",
     "json-to-influxdb-line": "^0.2.0",
     "latlon-geohash": "^1.1.0",
     "lodash": "^4.17.4",
