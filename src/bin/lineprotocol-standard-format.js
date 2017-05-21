@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs')
   tscop = require('../lib/index'),
   TimeSeriesCopError = require('../lib/error').TimeSeriesCopError;
