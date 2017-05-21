@@ -23,7 +23,6 @@ outputSchema.time = 'time';
 tscop
   .fieldStream({
     stream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
-    start: 1,
     delimiter:'\t'
   })
   .filter(o => o.fields.length && o.fields[0] !== 'Date') // ignore header line
