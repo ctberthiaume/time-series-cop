@@ -8,13 +8,11 @@ const fs = require('fs')
 
 const argv = tscop.cli();
 
-const headers = [
-  'dateString', 'timeString', 'inputMinV', 'inputMaxV', 'inputHz', 'outputV', 'outputHz',
-  'load', 'capacity', 'remainingRuntime', 'temp', 'humidity'
-];
+const headers = 'cruise,file,timestamp,lat,lon,opp_evt_ratio,flow_rate,file_duration,pop,n_count,abundance,fsc_small,chl_small,pe'.split(',');
 const types = [
-  'text', 'text', 'float', 'float', 'float', 'float', 'float',
-  'integer', 'integer', 'integer', 'float', 'integer'
+  'text', 'text', 'text', 'text', 'text',
+  'float', 'float', 'float', 'category',
+  'integer', 'float', 'float', 'float', 'float'
 ];
 
 const schema = _.zipObject(headers, types);
@@ -22,18 +20,17 @@ const outputSchema = _.zipObject(headers, types);
 outputSchema.cruise = 'category';
 outputSchema.time = 'time';
 
-
 let count = 0;
 let pipeline = tscop
   .fieldStream({
     stream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
-    delimiter:'\t'
+    start: 1,
+    delimiter:','
   })
-  .filter(o => o.fields.length && o.fields[0] !== 'Date') // ignore header line
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))
   .doto(o => {
-    o.doc.time = moment.utc(`${o.doc.dateString}T${o.doc.timeString}Z`);
+    o.doc.time = moment(o.doc.timestamp);
     o.doc.cruise = argv.cruise;
   })
   .doto(o => count++);

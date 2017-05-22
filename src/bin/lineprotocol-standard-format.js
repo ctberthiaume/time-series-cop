@@ -7,9 +7,14 @@ const fs = require('fs')
 const argv = tscop.standardCli();
 
 const inputStream = fs.createReadStream(argv.input, {encoding: 'utf8'});
-const outputStream = fs.createWriteStream(argv.output);
-tscop.parseStandardFile(inputStream, outputStream)
-  .then(result => console.log(result))
+
+let p;
+if (argv.host && argv.db) {
+  p = tscop.parseStandardFileToDB(inputStream, argv.host, argv.db);
+} else {
+  p = tscop.parseStandardFile(inputStream, fs.createWriteStream(argv.output));
+}
+p.then(result => console.log(result))
   .catch(err => {
     if (err instanceof TimeSeriesCopError) {
       console.log(err.message);
