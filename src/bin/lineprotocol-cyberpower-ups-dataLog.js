@@ -24,6 +24,7 @@ outputSchema.time = 'time';
 
 
 let count = 0;
+let error;
 let pipeline = tscop
   .fieldStream({
     stream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
@@ -47,8 +48,13 @@ if (argv.db && argv.host) {
       host: argv.host,
       database: argv.db
     }))
-    .stopOnError(err => console.log(err))
-    .done(() => console.log('Success. Wrote ' + count + ' points.'));
+    .stopOnError(err => {
+      error = err;
+      console.log(err);
+    })
+    .done(() => {
+      if (!error) console.log('Success. Wrote ' + count + ' points.');
+    });
 } else {
   const outputStream = fs.createWriteStream(argv.output);
   outputStream.on('finish', () => {

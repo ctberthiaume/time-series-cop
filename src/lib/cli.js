@@ -2,66 +2,47 @@
  * Process command-line arguments for a text file to Line Protocol script.
  * @returns {Object} yargs argv object
  */
-function standardCli() {
+function baseCli() {
   const argv = require('yargs')
     .usage('Usage: $0 [options]')
-    .example('$0 -c KOK1606 -m seaflow -f seaflow.csv')
+    .example('$0 -c KOK1606 -m seaflow -i seaflow.csv -d mydb -H localhost')
     .describe('c', 'Cruise name for Line Protocol tags')
     .alias('c', 'cruise')
     .nargs('c', 1)
     .describe('m', 'InfluxDB measurement name')
     .alias('m', 'measurement')
     .nargs('m', 1)
-    .describe('i', 'Input file path. Will be converted to a node readable stream.')
+    .describe('i', 'Input file path')
     .alias('i', 'input')
     .nargs('i', 1)
-    .describe('t', 'Create a tailing stream of input file contents (always-tail npm module)')
-    .alias('t', 'tail')
-    .boolean('t')
-    .describe('o', 'Output file path. Will be converted to a node writable stream. - for stdout.')
+    .group(['cruise', 'measurement', 'input'], 'Common Options')
+    .describe('o', 'Output file path. Incompatible with -d or -H.')
     .alias('o', 'output')
     .nargs('o', 1)
-    .default('o', '-')
-    .describe('H', 'InfluxDB hostname')
+    .conflicts('output', 'db')
+    .group('output', 'Line protocol File Output Options')
+    .describe('host', 'InfluxDB hostname. Incompatible with -o.')
     .alias('H', 'host')
     .nargs('H', 1)
-    .describe('d', 'InfluxDB database name')
+    .describe('d', 'InfluxDB database name. Incompatible with -o.')
     .alias('d', 'db')
     .nargs('d', 1)
+    .implies('db', 'host')
+    .implies('host', 'db')
+    .group(['host', 'db'], 'InfluxDB Write Options')
+  return argv;
+}
+
+function standardCli() {
+  return baseCli()
     .demandOption(['i'])
     .argv;
-  return argv;
 }
 exports.standardCli = standardCli;
 
 function cli() {
-  const argv = require('yargs')
-    .usage('Usage: $0 [options]')
-    .example('$0 -c KOK1606 -m seaflow -f seaflow.csv')
-    .describe('c', 'Cruise name for Line Protocol tags')
-    .alias('c', 'cruise')
-    .nargs('c', 1)
-    .describe('m', 'InfluxDB measurement name')
-    .alias('m', 'measurement')
-    .nargs('m', 1)
-    .describe('i', 'Input file path. Will be converted to a node readable stream.')
-    .alias('i', 'input')
-    .nargs('i', 1)
-    .describe('t', 'Create a tailing stream of input file contents (always-tail npm module)')
-    .alias('t', 'tail')
-    .boolean('t')
-    .describe('o', 'Output file path. Will be converted to a node writable stream. - for stdout.')
-    .alias('o', 'output')
-    .nargs('o', 1)
-    .default('o', '-')
-    .describe('H', 'InfluxDB hostname')
-    .alias('H', 'host')
-    .nargs('H', 1)
-    .describe('d', 'InfluxDB database name')
-    .alias('d', 'db')
-    .nargs('d', 1)
+  return baseCli()
     .demandOption(['i', 'm', 'c'])
     .argv;
-  return argv;
 }
 exports.cli = cli;

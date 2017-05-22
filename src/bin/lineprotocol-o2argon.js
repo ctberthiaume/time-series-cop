@@ -8,17 +8,12 @@ const fs = require('fs')
 
 const argv = tscop.cli();
 
-const headers = 'cruise,file,timestamp,lat,lon,opp_evt_ratio,flow_rate,file_duration,pop,n_count,abundance,fsc_small,chl_small,pe'.split(',');
-const types = [
-  'text', 'text', 'text', 'text', 'text',
-  'float', 'float', 'float', 'category',
-  'integer', 'float', 'float', 'float', 'float'
-];
+const headers = [ 'time', 'timestamp', 'O2Ar' ];
+const types = [ 'time', 'float', 'float' ];
 
 const schema = _.zipObject(headers, types);
 const outputSchema = _.zipObject(headers, types);
 outputSchema.cruise = 'category';
-outputSchema.time = 'time';
 
 let count = 0;
 let error;
@@ -26,15 +21,26 @@ let pipeline = tscop
   .fieldStream({
     stream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
     start: 1,
-    delimiter:','
+    delimiter:'\t'
+  })
+  .doto(o => {
+    // Only keep relevant fields 0 and 8. Prepend time
+    const timestamp = o.fields[0];
+    const oxygenArgonRatio = o.fields[7];
+    const time = moment.utc({year: 1900})
+      .add(parseInt(timestamp) - 2, 'day')
+      .add((+timestamp - parseInt(timestamp)) * 24, 'hour');
+    o.fields = [ time, timestamp, oxygenArgonRatio ];
   })
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))
   .doto(o => {
-    o.doc.time = moment(o.doc.timestamp);
     o.doc.cruise = argv.cruise;
   })
-  .doto(o => count++);
+  .doto(o => {
+    count++;
+    if (count % 100000 === 0) console.log(count);
+  });
 
 if (argv.db && argv.host) {
   pipeline
@@ -55,11 +61,14 @@ if (argv.db && argv.host) {
 } else {
   const outputStream = fs.createWriteStream(argv.output);
   outputStream.on('finish', () => {
-    console.log('Success. Wrote ' + count + ' points.');
+    if (!error) console.log('Success. Wrote ' + count + ' points.');
   });
 
   pipeline
     .through(tscop.docToLineProtocol(argv.measurement, outputSchema))
-    .stopOnError(err => console.log(err))
-    .pipe(outputStream);
+    .stopOnError(err => {
+      error = err;
+      console.log('x ' + err);
+    })
+    .each(val => outputStream.write(val));
 }

@@ -1,6 +1,6 @@
 {
   "name": "time-series-cop",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
   "repository": {
@@ -11,9 +11,10 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "lineprotocol-standard-format.js": "./src/bin/lineprotocol-standard-format.js",
-    "lineprotocol-cyberpower-ups-dataLog.js": "./src/bin/lineprotocol-cyberpower-ups-dataLog.js",
-    "lineprotocol-seaflow.js": "./src/bin/lineprotocol-seaflow.js"
+    "lineprotocol-standard-format": "./src/bin/lineprotocol-standard-format.js",
+    "lineprotocol-cyberpower-ups-dataLog": "./src/bin/lineprotocol-cyberpower-ups-dataLog.js",
+    "lineprotocol-seaflow": "./src/bin/lineprotocol-seaflow.js",
+    "lineprotocol-o2argon": "./src/bin/lineprotocol-o2argon.js"
   },
   "author": "Chris Berthiaume <chrisbee@uw.edu>",
   "license": "ISC",

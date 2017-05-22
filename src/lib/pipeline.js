@@ -351,7 +351,19 @@ function writeDocsToInfluxDB({
     return stream
       .batch(batchSize)
       .map(points => points.sort((a, b) => a.timestamp - b.timestamp))
-      .flatMap(points => H(influx.writePoints(points, { precision: 'ms' })));
+      .flatMap(points => {
+        return H(
+          influx.ping(5000).then(hosts => {
+            hosts.forEach(host => {
+              if (!host.online) {
+                throw new Error('Could not connect to database ' + host.url.host);
+              }
+            })
+          }).then(() => {
+            influx.writePoints(points, { precision: 'ms' });
+          })
+        );
+      });
   };
 }
 exports.writeDocsToInfluxDB = writeDocsToInfluxDB;
