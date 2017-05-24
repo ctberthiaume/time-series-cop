@@ -53,7 +53,11 @@ if (argv.db && argv.host) {
     }))
     .stopOnError(err => {
       error = err;
-      console.log(err);
+      if (err instanceof TimeSeriesCopError) {
+        console.log(err.message);
+      } else {
+        throw err;
+      }
     })
     .done(() => {
       if (!error) console.log('Success. Wrote ' + count + ' points.');
@@ -68,7 +72,11 @@ if (argv.db && argv.host) {
     .through(tscop.docToLineProtocol(argv.measurement, outputSchema))
     .stopOnError(err => {
       error = err;
-      console.log('x ' + err);
+      if (err instanceof TimeSeriesCopError) {
+        console.log(err.message);
+      } else {
+        throw err;
+      }
     })
     .each(val => outputStream.write(val));
 }
