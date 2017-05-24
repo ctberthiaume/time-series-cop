@@ -186,24 +186,6 @@ function docToLineProtocol(measurement, schema, ensureSorted=true) {
   }
   schema = schemaValidation.schema;  // set validated, case-normalized schema
   let prevtime = null;  // track previous time to ensure ascending order
-  // In highland land if we throw an error in this stream pipeline and
-  // stopOnError() is attached somewhere downstream, then one (or more?) chunks
-  // will pass through this transform befor e the stream is aborted. If the
-  // error condition is still present and we always throw an error here for all
-  // subsequent chunks then the stream will never properly abort. So set a flag
-  // to make sure we only throw once.
-  // This may be problematic if we don't set stopOnError() downstream but instead
-  // want to just log errors with errors() because it means only the first error
-  // condition encountered will throw and be log downstream. Will look into this
-  // later.
-  //
-  // For now, always attach stopOnError() after this transform.
-  //
-  // This appears to only be a problem because we've attached a through()
-  // transform with a Node Transform stream in the downstream. If this was
-  // replaced with a highland map() then everything works as expected.
-
-  let threw = false;
 
   return (stream) => {
     return stream.map(o => {
@@ -245,12 +227,10 @@ function docToLineProtocol(measurement, schema, ensureSorted=true) {
       }
 
       // Timestamp must be present
-      if (!threw && time === undefined) {
-        threw = true;
+      if (time === undefined) {
         throw new TimeSeriesCopError(`${validation.errorPrefix} time value missing from line ${o.lineIndex + 1}`);
       }
-      if (!threw && ensureSorted && prevtime !== null && prevtime > +time) {
-        threw = true;
+      if (ensureSorted && prevtime !== null && prevtime > +time) {
         throw new TimeSeriesCopError(`${validation.errorPrefix} records not in ascending chronological order near line ${o.lineIndex + 1}`);
       }
       prevtime = +time;
