@@ -15,10 +15,11 @@ if (argv.host && argv.db) {
   p = tscop.parseStandardFile(inputStream, fs.createWriteStream(argv.output));
 }
 p.then(result => console.log(result))
-  .catch(err => {
-    if (err instanceof TimeSeriesCopError) {
-      console.log(err.message);
+  .catch(e => {
+    if (e instanceof TimeSeriesCopError) {
+      console.log(`${e.name}: ${e.message}`);
     } else {
-      throw err;
+      console.log(e.stack);
     }
+    process.exit(1);
   });

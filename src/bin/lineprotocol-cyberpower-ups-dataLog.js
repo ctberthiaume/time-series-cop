@@ -18,16 +18,20 @@ const types = [
 ];
 
 const schema = _.zipObject(headers, types);
+// Schema for output records. Should specify any properties which
+// were added in the transform pipeline. Should only contain properties to be
+// included in InfluxDB records.
 const outputSchema = _.zipObject(headers, types);
 outputSchema.cruise = 'category';
 outputSchema.time = 'time';
+let outstream
+if (argv.output) {
+  outstream = fs.createWriteStream(argv.output);
+}
 
-
-let count = 0;
-let error;
-let pipeline = tscop
-  .fieldStream({
-    stream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
+try {
+  let pipeline = tscop.fieldStream({
+    instream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
     delimiter:'\t'
   })
   .filter(o => o.fields.length && o.fields[0] !== 'Date') // ignore header line
@@ -37,43 +41,21 @@ let pipeline = tscop
     o.doc.time = moment.utc(`${o.doc.dateString}T${o.doc.timeString}Z`);
     o.doc.cruise = argv.cruise;
   })
-  .doto(o => count++);
-
-if (argv.db && argv.host) {
-  pipeline
-    .through(tscop.prepDocForInfluxDB(argv.measurement, outputSchema))
-    .through(tscop.writeDocsToInfluxDB({
-      measurement: argv.measurement,
-      schema: outputSchema,
-      host: argv.host,
-      database: argv.db
-    }))
-    .stopOnError(err => {
-      error = err;
-      if (err instanceof TimeSeriesCopError) {
-        console.log(err.message);
-      } else {
-        throw err;
-      }
-    })
-    .done(() => {
-      if (!error) console.log('Success. Wrote ' + count + ' points.');
-    });
-} else {
-  const outputStream = fs.createWriteStream(argv.output);
-  outputStream.on('finish', () => {
-    if (!error) console.log('Success. Wrote ' + count + ' points.');
-  });
-
-  pipeline
-    .through(tscop.docToLineProtocol(argv.measurement, outputSchema))
-    .stopOnError(err => {
-      error = err;
-      if (err instanceof TimeSeriesCopError) {
-        console.log(err.message);
-      } else {
-        throw err;
-      }
-    })
-    .pipe(outputStream);
+  .through(tscop.saveData({
+    measurement: argv.measurement,
+    schema: outputSchema,
+    host: argv.host,
+    database: argv.db,
+    outstream: outstream
+  }));  // saveData consumes and ends the stream
+}
+catch (e) {
+  // Catch any errors thrown when creating the pipeline
+  // Errors during the pipeline are handled by saveData()
+  if (e instanceof TimeSeriesCopError) {
+    console.log(`${e.name}: ${e.message}`);
+    process.exit(1);
+  } else {
+    throw e;
+  }
 }

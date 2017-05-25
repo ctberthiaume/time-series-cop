@@ -6,7 +6,7 @@ describe('Lines', () => {
   it('should ignore internal blank lines', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', '\n', 'line3\n'],
+        instream: ['line1\n', '\n', 'line3\n'],
         dropInternalBlank: true
       })
       .toArray(x => {
@@ -19,7 +19,7 @@ describe('Lines', () => {
   it('should keep internal blank lines', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', '\n', 'line3\n'],
+        instream: ['line1\n', '\n', 'line3\n'],
         dropInternalBlank: false
       })
       .toArray(x => {
@@ -33,7 +33,7 @@ describe('Lines', () => {
   it('should ignore final blank lines', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', 'line2\n', '\n'],
+        instream: ['line1\n', 'line2\n', '\n'],
         dropFinalBlank: true
       })
       .toArray(x => {
@@ -46,7 +46,7 @@ describe('Lines', () => {
   it('should keep final blank lines', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', 'line2\n', '\n'],
+        instream: ['line1\n', 'line2\n', '\n'],
         dropFinalBlank: false
       })
       .toArray(x => {
@@ -60,7 +60,7 @@ describe('Lines', () => {
   it('should handle CR, LF, or CRLF line endings', done => {
     tscop
       .lineStream({
-        stream: ['line1\r', 'line2\n', 'line3\r\n', 'line4\n']
+        instream: ['line1\r', 'line2\n', 'line3\r\n', 'line4\n']
       })
       .toArray(x => {
         x.should.have.length(4);
@@ -74,7 +74,7 @@ describe('Lines', () => {
   it('should handle case where final line does not end in newline', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', 'line2'],
+        instream: ['line1\n', 'line2'],
         dropFinalBlank: false
       })
       .toArray(x => {
@@ -87,7 +87,7 @@ describe('Lines', () => {
   it('should start at second line', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', 'line2\n', 'line3\n'],
+        instream: ['line1\n', 'line2\n', 'line3\n'],
         start: 1
       })
       .toArray(x => {
@@ -100,7 +100,7 @@ describe('Lines', () => {
   it('should end with second line', done => {
     tscop
       .lineStream({
-        stream: ['line1\n', 'line2\n', 'line3\n'],
+        instream: ['line1\n', 'line2\n', 'line3\n'],
         end: 2
       })
       .toArray(x => {
@@ -113,7 +113,7 @@ describe('Lines', () => {
   it('should keep lines when only skipping internal blank lines and all lines are empty', done => {
     tscop
       .lineStream({
-        stream: ['\n', '\n'],
+        instream: ['\n', '\n'],
         dropInternalBlank: true,
         dropFinalBlank: false
       })
@@ -128,7 +128,7 @@ describe('Fields', () => {
   it('should split on whitespace', done => {
     tscop
       .fieldStream({
-        stream: ['a b    \tc\n'],
+        instream: ['a b    \tc\n'],
         delimiter: 'whitespace'
       })
       .toArray(x => {
@@ -144,7 +144,7 @@ describe('Fields', () => {
   it('should split on arbitrary string', done => {
     tscop
       .fieldStream({
-        stream: ['a\t b\tc\n'],
+        instream: ['a\t b\tc\n'],
         delimiter: '\t'
       })
       .toArray(x => {
@@ -160,7 +160,7 @@ describe('Fields', () => {
   it('should create empty field array for blank line', done => {
     tscop
       .fieldStream({
-        stream: ['\n'],
+        instream: ['\n'],
         delimiter: '\t',
         dropInternalBlank: false,
         dropFinalBlank: false
@@ -173,7 +173,7 @@ describe('Fields', () => {
   it('should handle initial blank field followed by non-blank fields', done => {
     tscop
       .fieldStream({
-        stream: [',foo,bar\n'],
+        instream: [',foo,bar\n'],
         delimiter: ',',
         dropInternalBlank: false,
         dropFinalBlank: false
@@ -187,7 +187,7 @@ describe('Fields', () => {
   it('should skip recordIndex increment when skipping lines', done => {
     tscop
       .fieldStream({
-        stream: ['line1\n', '\n', 'line3\n'],
+        instream: ['line1\n', '\n', 'line3\n'],
         dropInternalBlank: true
       })
       .toArray(x => {

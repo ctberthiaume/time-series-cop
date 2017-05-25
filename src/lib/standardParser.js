@@ -43,108 +43,82 @@ function getStandardHeader(inputStream, delimiter='\t') {
   };
   let error;
 
-  const p = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     // Get timestamp and column headers from header section
     pipeline
       .fieldStream({
-        stream: inputStream,
+        instream: inputStream,
         delimiter: delimiter,
         end: 7,
         dropInternalBlank: false,
         dropFinalBlank: false
       })
-      .stopOnError(err => {
-        reject(err);
-      })
-      .each(o => {
-        rawheader[headerKeys[o.lineIndex]].record = o;
-      })
-      .done(() => {
-        resolve(rawheader);
-      });
+      .doto(o => rawheader[headerKeys[o.lineIndex]].record = o)
+      .stopOnError(err => reject(err))
+      .done(() => resolve(rawheader));
     });
-  return p;
 }
 exports.getStandardHeader = getStandardHeader;
 
 function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
-  const p = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     // Now that we have info from header section, parse data lines
     const schema = _.zipObject(header.headers.data, header.types.data);
     const outputSchema = _.zipObject(header.headers.data, header.types.data);
     outputSchema.cruise = 'category';
 
     let count = 0;
-
-    // Resolve successfully when we finish writing line protocol output
-    outputStream.on('finish', () => {
-      resolve('Success. Wrote ' + count + ' points.');
-    });
-
-    try {
-      pipeline
-        .fieldStream({
-          stream: inputStream,
-          delimiter: delimiter,
-          start: 7,
-          dropInternalBlank: false,
-          dropFinalBlank: true
-        })
-        .through(pipeline.fieldsToDoc(header.headers.data))
-        .through(pipeline.validateDoc(schema, true))
-        .doto(o => {
-          o.doc.cruise = header.cruise.data;
-        })
-        .doto(x => count++)
-        .through(pipeline.docToLineProtocol(header.measurement.data, outputSchema))
-        .stopOnError(err => reject(err))
-        .pipe(outputStream);
-    } catch (err) {
-      // Catch any errors when we build the pipeline
-      reject(err);
-    }
+    pipeline
+      .fieldStream({
+        instream: inputStream,
+        delimiter: delimiter,
+        start: 7,
+        dropInternalBlank: false,
+        dropFinalBlank: true
+      })
+      .through(pipeline.fieldsToDoc(header.headers.data))
+      .through(pipeline.validateDoc(schema, true))
+      .doto(o => o.doc.cruise = header.cruise.data)
+      .doto(x => count++)
+      .through(pipeline.writeDocToLineProtocol({
+        measurement: header.measurement.data,
+        schema: outputSchema,
+        outstream: outputStream
+      }))
+      .stopOnError(err => reject(err))
+      .done(() => resolve('Success. Wrote ' + count + ' points.'));
   });
-  return p;
 }
 exports.parseStandardBody = parseStandardBody;
 
 function parseStandardBodyToDB(inputStream, header, host, db, delimiter='\t') {
-  const p = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     // Now that we have info from header section, parse data lines
     const schema = _.zipObject(header.headers.data, header.types.data);
     const outputSchema = _.zipObject(header.headers.data, header.types.data);
     outputSchema.cruise = 'category';
     let count = 0;
-    try {
-      pipeline
-        .fieldStream({
-          stream: inputStream,
-          delimiter: delimiter,
-          start: 7,
-          dropInternalBlank: false,
-          dropFinalBlank: true
-        })
-        .through(pipeline.fieldsToDoc(header.headers.data))
-        .through(pipeline.validateDoc(schema, true))
-        .doto(o => {
-          o.doc.cruise = header.cruise.data;
-        })
-        .through(pipeline.prepDocForInfluxDB(header.measurement.data, outputSchema))
-        .doto(x => count++)
-        .through(pipeline.writeDocsToInfluxDB({
-          measurement: header.measurement.data,
-          schema: outputSchema,
-          host: host,
-          database: db
-        }))
-        .stopOnError(err => reject(err))
-        .done(() => resolve('Success. Wrote ' + count + ' points.'));
-    } catch (err) {
-      // Catch any errors when we build the pipeline
-      reject(err);
-    }
+    pipeline
+      .fieldStream({
+        instream: inputStream,
+        delimiter: delimiter,
+        start: 7,
+        dropInternalBlank: false,
+        dropFinalBlank: true
+      })
+      .through(pipeline.fieldsToDoc(header.headers.data))
+      .through(pipeline.validateDoc(schema, true))
+      .doto(o => o.doc.cruise = header.cruise.data)
+      .doto(x => count++)
+      .through(pipeline.writeDocToInfluxDB({
+        measurement: header.measurement.data,
+        schema: outputSchema,
+        host: host,
+        database: db
+      }))
+      .stopOnError(err => reject(err))
+      .done(() => resolve('Success. Wrote ' + count + ' points.'));
   });
-  return p;
 }
 exports.parseStandardBodyToDB = parseStandardBodyToDB;
 

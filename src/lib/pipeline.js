@@ -13,7 +13,7 @@ const TimeSeriesCopError = require('./error').TimeSeriesCopError;
  * normalized before splitting and stripped from final text. Produces objects
  * with { text: <line text>, lineIndex: <line index> }.
  * text
- * @param {Object} [stream=null] Input to Highland stream constructor. May be
+ * @param {Object} [instream=null] Input to Highland stream constructor. May be
  * Node readable stream, array, EventEmitter, Promise, etc. See Highland
  * docs.
  * @param {number} [start=0] Index of line to begin processing (inclusive)
@@ -30,14 +30,14 @@ const TimeSeriesCopError = require('./error').TimeSeriesCopError;
  * @returns {Object} Highland stream
  */
 function lineStream({
-  stream=null,
+  instream=null,
   start=0,
   end=Infinity,
   dropInternalBlank=true,
   dropFinalBlank=true
 } = {}) {
   let i = 0;
-  return H(stream)  // make a highland stream
+  return H(instream)  // make a highland stream
     .through(eolFix())  // normalize line endings
     .split()  // line splitter
     .map(line => ({ text: line, lineIndex: i++ }))
@@ -51,7 +51,7 @@ exports.lineStream = lineStream;
  * fields. Input values should be objects that look like this:
  * { text: <line text>, lineIndex: <line index> } (e.g. made by lineStream). Output
  * objects will be the same with additional 'fields' and 'recordIndex' properties.
- * @param {Object} [stream=null] Input to Highland stream constructor. May be
+ * @param {Object} [instream=null] Input to Highland stream constructor. May be
  * Node readable stream, array, EventEmitter, Promise, etc. See Highland
  * docs.
  * @param {number} [start=0] Index of line to begin processing (inclusive)
@@ -70,7 +70,7 @@ exports.lineStream = lineStream;
  * @returns {Object} Highland stream
  */
 function fieldStream({
-  stream=null,
+  instream=null,
   start=0,
   end=Infinity,
   dropInternalBlank=true,
@@ -78,7 +78,7 @@ function fieldStream({
   delimiter='\t'
 } = {}) {
   let i = 0;
-  let pipe = lineStream({stream, start, end, dropInternalBlank, dropFinalBlank});
+  let pipe = lineStream({instream, start, end, dropInternalBlank, dropFinalBlank});
   // Turn line text into array of field values
   if (delimiter === 'whitespace') {
     pipe = pipe.doto(o => {
@@ -176,9 +176,18 @@ exports.validateDoc = validateDoc;
  * the Line Protocol output string, and their types (category, text, float,
  * integer,boolean). Category values become InfluxDB tags and all other values
  * become fields. Should not contain a time property.
+ * @param {boolean} [ensureSorted=true] Throw an error if points are not in
+ * ascending chronological order.
+ * @param {Object} outstream Node writable stream that line protocol lines will
+ * be written to.
  * @returns {Object} Highland stream transform function for use with through()
  */
-function docToLineProtocol(measurement, schema, ensureSorted=true) {
+function writeDocToLineProtocol({
+  measurement=null,
+  schema=null,
+  ensureSorted=true,
+  outstream=null
+} = {}) {
   // Validate schema types
   const schemaValidation = validation.validateSchema(schema);
   if (schemaValidation.error) {
@@ -243,10 +252,10 @@ function docToLineProtocol(measurement, schema, ensureSorted=true) {
       };
     })
     .through(new JsonInfluxDbStream())
-    .map(lp => lp + '\n'); // add some newlines
+    .doto(x => outstream.write(x + '\n'));
   };
 }
-exports.docToLineProtocol = docToLineProtocol;
+exports.writeDocToLineProtocol = writeDocToLineProtocol;
 
 /**
  * Create a Highland stream transform function to turn each object into a point
@@ -262,7 +271,7 @@ exports.docToLineProtocol = docToLineProtocol;
  * become fields. Should not contain a time property.
  * @returns {Object} Highland stream transform function for use with through()
  */
-function prepDocForInfluxDB(measurement, schema) {
+function prepDocForInfluxDB({measurement=null, schema=null} = {}) {
   // Validate schema types
   const schemaValidation = validation.validateSchema(schema);
   if (schemaValidation.error) {
@@ -285,6 +294,8 @@ function prepDocForInfluxDB(measurement, schema) {
                 break;
               case 'time':
                 time = +o.doc[k];  // moment, Date, or epoch ms
+                break;
+              case undefined:
                 break;
               default:
                 fields[k] = o.doc[k];
@@ -325,7 +336,7 @@ exports.prepDocForInfluxDB = prepDocForInfluxDB;
  * @param {string} [batchSize=10000] How many points to write at a time
  * @returns {Object} Highland stream transform function for use with through()
  */
-function writeDocsToInfluxDB({
+function writeDocToInfluxDB({
   measurement=null,
   schema=null,
   host=null,
@@ -348,6 +359,7 @@ function writeDocsToInfluxDB({
 
   return (stream) => {
     return stream
+      .through(prepDocForInfluxDB({measurement, schema}))
       .batch(batchSize)
       .map(points => points.sort((a, b) => a.timestamp - b.timestamp))
       .flatMap(points => {
@@ -365,7 +377,61 @@ function writeDocsToInfluxDB({
       });
   };
 }
-exports.writeDocsToInfluxDB = writeDocsToInfluxDB;
+exports.writeDocToInfluxDB = writeDocToInfluxDB;
+
+function saveData({
+  measurement=null,
+  schema=null,
+  host=null,
+  database=null,
+  outstream=null
+} = {}) {
+  let count = 0;
+  let error;
+
+  return (stream) => {
+    // Add a counter
+    stream = stream.doto(o => count++);
+
+    // Output data to InfluxDB or line protocol file
+    if (database && host) {
+      stream = stream.through(writeDocToInfluxDB({
+        measurement,
+        schema,
+        host,
+        database
+      }));
+    } else {
+      stream = stream.through(writeDocToLineProtocol({
+        measurement,
+        schema,
+        outstream
+      }));
+    }
+
+    // Catch errors in pipeline and print or throw.
+    // This ends the pipeline
+    stream = stream.stopOnError(e => {
+      error = e;
+      if (e instanceof TimeSeriesCopError) {
+        console.log(`${e.name}: ${e.message}`);
+        // Not ideal to exit here, but makes writing scripts easier
+        process.exit(1);
+      } else {
+        throw e;
+      }
+    });
+
+    // This always runs, even if we stop for errors
+    // This also starts stream consumption
+    stream = stream.done(() => {
+      if (!error) console.log('Success. Wrote ' + count + ' points.');
+    });
+
+    return stream;
+  };
+}
+exports.saveData = saveData;
 
 function schema2InfluxSchema(schema, measurement) {
   influxSchema = { measurement, tags: [], fields: {} };
