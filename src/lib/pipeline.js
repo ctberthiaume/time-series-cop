@@ -454,6 +454,7 @@ function schema2InfluxSchema(schema, measurement) {
         break;
     }
   });
+  influxSchema.tags.sort();
   // If no fields present, mark missing data with 'influxMissingData' field
   influxSchema.fields.influxMissingData = Influx.FieldType.BOOLEAN;
   return influxSchema;
