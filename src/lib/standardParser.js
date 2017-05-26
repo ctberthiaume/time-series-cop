@@ -86,7 +86,9 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
         outstream: outputStream
       }))
       .stopOnError(err => reject(err))
-      .done(() => resolve('Success. Wrote ' + count + ' points.'));
+      .done(() => {
+        resolve(`Success. ${header.measurement.data}. Wrote ${count} points.`)
+      });
   });
 }
 exports.parseStandardBody = parseStandardBody;
@@ -117,7 +119,9 @@ function parseStandardBodyToDB(inputStream, header, host, db, delimiter='\t') {
         database: db
       }))
       .stopOnError(err => reject(err))
-      .done(() => resolve('Success. Wrote ' + count + ' points.'));
+      .done(() => {
+        resolve(`Success. ${header.measurement.data}. Wrote ${count} points.`)
+      });
   });
 }
 exports.parseStandardBodyToDB = parseStandardBodyToDB;

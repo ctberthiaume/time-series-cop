@@ -41,7 +41,7 @@ describe('Standard Format', function() {
           '[0]',
           'fileType,group=A,cruise=cruise speed=6.0,distance=10i,notes="some notes",flag=TRUE 1494100377601000000\n'
         );
-        expect(result).to.equal('Success. Wrote 1 points.');
+        expect(result).to.equal('Success. fileType. Wrote 1 points.');
       });
   });
   it('should produce one "missing data" line of line protocol', function() {
@@ -64,7 +64,7 @@ describe('Standard Format', function() {
           '[0]',
           'fileType,cruise=cruise influxMissingData=true 1494100377601000000\n'
         );
-        expect(result).to.equal('Success. Wrote 1 points.');
+        expect(result).to.equal('Success. fileType. Wrote 1 points.');
     });
   });
   it('should reject if file type is missing', function() {
