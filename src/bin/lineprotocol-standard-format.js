@@ -14,7 +14,7 @@ if (argv.host && argv.db) {
 } else {
   p = tscop.parseStandardFile(inputStream, fs.createWriteStream(argv.output));
 }
-p.then(result => console.log(result))
+p.then(result => console.log(JSON.stringify(result, null, "  ")))
   .catch(e => {
     if (e instanceof TimeSeriesCopError) {
       console.log(`${e.name}: ${e.message}`);

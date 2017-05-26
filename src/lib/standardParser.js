@@ -2,6 +2,7 @@ const pipeline = require('./pipeline'),
   validation = require('./validation'),
   TimeSeriesCopError = require('./error').TimeSeriesCopError,
   fs = require('fs'),
+  path = require('path'),
   _ = require('lodash');
 
 const eregex = new RegExp('^' + validation.errorPrefix);
@@ -87,7 +88,12 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
       }))
       .stopOnError(err => reject(err))
       .done(() => {
-        resolve(`Success. ${header.measurement.data}. Wrote ${count} points.`)
+        const result = { points: count };
+        result.header = {};
+        _.keys(header).forEach(k => {
+          result.header[k] = header[k].data;
+        });
+        resolve(result)
       });
   });
 }
@@ -120,7 +126,12 @@ function parseStandardBodyToDB(inputStream, header, host, db, delimiter='\t') {
       }))
       .stopOnError(err => reject(err))
       .done(() => {
-        resolve(`Success. ${header.measurement.data}. Wrote ${count} points.`)
+        const result = { points: count };
+        result.header = {};
+        _.keys(header).forEach(k => {
+          result.header[k] = header[k].data;
+        });
+        resolve(result)
       });
   });
 }
@@ -147,7 +158,7 @@ function validateStandardHeader(origheader) {
     header.columnDescriptions.data = header.columnDescriptions.record.fields;
   }
   if (header.types.record && header.types.record.fields) {
-    header.types.data = header.types.record.fields;
+    header.types.data = header.types.record.fields.map(t => t.toLowerCase());  // normalize types to lower case
   }
   if (header.units.record && header.units.record.fields) {
     header.units.data = header.units.record.fields;
