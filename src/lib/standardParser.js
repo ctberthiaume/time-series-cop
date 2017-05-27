@@ -77,7 +77,7 @@ function parseStandardBody(inputStream, outputStream, header, delimiter='\t') {
         dropInternalBlank: false,
         dropFinalBlank: true
       })
-      .through(pipeline.fieldsToDoc(header.headers.data))
+      .through(pipeline.fieldsToDoc(header.headers.data, true))
       .through(pipeline.validateDoc(schema, true))
       .doto(o => o.doc.cruise = header.cruise.data)
       .doto(x => count++)
@@ -114,7 +114,7 @@ function parseStandardBodyToDB(inputStream, header, host, db, delimiter='\t') {
         dropInternalBlank: false,
         dropFinalBlank: true
       })
-      .through(pipeline.fieldsToDoc(header.headers.data))
+      .through(pipeline.fieldsToDoc(header.headers.data, true))
       .through(pipeline.validateDoc(schema, true))
       .doto(o => o.doc.cruise = header.cruise.data)
       .doto(x => count++)

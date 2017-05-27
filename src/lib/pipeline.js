@@ -109,10 +109,15 @@ exports.fieldStream = fieldStream;
  * 'fields'. A new property 'doc' will be added to the object in transit.
  * @param {string[]} headers Names of input array fields in same order. Will
  * become properties of output objects.
+ * @param {boolean} If true, thow TimeSeriesCopError if
+ * fields length !== headers length.
  * @returns {Object} Highland stream transform function for use with through()
  */
-function fieldsToDoc(headers) {
+function fieldsToDoc(headers, strict) {
   return (stream) => {
+    if (!strict) {
+      stream = stream.filter(o => o.fields.length === headers.length);
+    }
     return stream
       .doto(o => {
         if (o.fields.length !== headers.length) {

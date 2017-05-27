@@ -76,7 +76,7 @@ const lax = {
   },
   time(value) {
     const m = moment.utc(value, moment.ISO_8601, true);
-    if (!m.isValid()) return { error: 'Invalid ISO8601 timestamp', value };
+    if (!m.isValid()) m = null;
     return { error: null, value: m };
   }
 }
