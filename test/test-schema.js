@@ -1,5 +1,6 @@
 const chai = require('chai');
 const should = chai.should();
+const expect = chai.expect;
 const validation = require('../src/lib/validation');
 
 describe('Schema', () => {
@@ -40,6 +41,22 @@ describe('Schema', () => {
     const validated = validation.validateSchema(schema);
     validated.should.have.property('error', 'badType');
     validated.should.have.property('schema').that.equals(schema);
+    done();
+  });
+  it('should reject invalid measurement name', done => {
+    expect(validation.validateMeasurement(';drop measurement data;')).to.be.null;
+    done();
+  });
+  it('should reject blank measurement name', done => {
+    expect(validation.validateMeasurement('')).to.be.null;
+    done();
+  });
+  it('should reject measurement name of only spaces', done => {
+    expect(validation.validateMeasurement('  ')).to.be.null;
+    done();
+  });
+  it('should accept valid measurement name', done => {
+    expect(validation.validateMeasurement('A-b_C')).to.not.be.null;
     done();
   });
 });

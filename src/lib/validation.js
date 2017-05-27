@@ -100,7 +100,14 @@ function validateSchema(schema) {
   return { error: null, schema: vschema };
 }
 
+const measurementRegex = /^[a-zA-Z0-9-_]+$/;
+function validateMeasurement(measurement) {
+  return measurementRegex.exec(measurement);
+}
+
 exports.validators = { strict, lax };
 exports.validateSchema = validateSchema;
 exports.validTypes = validTypes;
 exports.errorPrefix = errorPrefix;
+exports.validateMeasurement = validateMeasurement;
+exports.measurementRegex = measurementRegex

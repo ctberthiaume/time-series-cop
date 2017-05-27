@@ -176,8 +176,9 @@ function validateStandardHeader(origheader) {
     throw new TimeSeriesCopError(`${validation.errorPrefix} Incomplete header section(s): ${empties.join(', ')}`);
   }
 
-  // TODO check for allowed measurement name, cruise name through regex and
-  // optional konsul lookup if konsul is present.
+  if (!validation.validateMeasurement(header.measurement.data)) {
+    throw new TimeSeriesCopError(`${validation.errorPrefix} Invalid file type name ${header.measurement.data}. Must match regex ${validation.measurementRegex}`);
+  }
 
   // Check that all multi-column header lines are populated and consistent
   // These should be cases where data is an array
