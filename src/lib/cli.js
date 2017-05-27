@@ -1,3 +1,6 @@
+const validation = require('../lib/validation');
+TimeSeriesCopError = require('../lib/error').TimeSeriesCopError;
+
 /**
  * Process command-line arguments for a text file to Line Protocol script.
  * @returns {Object} yargs argv object
@@ -30,6 +33,12 @@ function baseCli() {
     .implies('db', 'host')
     .implies('host', 'db')
     .group(['host', 'db'], 'InfluxDB Write Options')
+    .check((argv, options) => {
+      if (argv.measurement && !validation.validateMeasurement(argv.measurement)) {
+        throw new TimeSeriesCopError(`${validation.errorPrefix} Invalid measurement name ${argv.measurement}. Must match regex ${validation.measurementRegex}`);
+      }
+      return true;
+    });
   return argv;
 }
 

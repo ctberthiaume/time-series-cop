@@ -4,7 +4,17 @@ const fs = require('fs')
   tscop = require('../lib/index'),
   TimeSeriesCopError = require('../lib/error').TimeSeriesCopError;
 
-const argv = tscop.standardCli();
+let argv;
+try {
+  argv = tscop.standardCli();
+} catch (e) {
+  if (e instanceof TimeSeriesCopError) {
+    console.log(`${e.name}: ${e.message}`);
+    process.exit(1);
+  } else {
+    throw e;
+  }
+}
 
 const inputStream = fs.createReadStream(argv.input, {encoding: 'utf8'});
 

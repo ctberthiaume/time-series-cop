@@ -6,7 +6,17 @@ const fs = require('fs')
   tscop = require('../lib/index'),
   TimeSeriesCopError = require('../lib/error').TimeSeriesCopError;
 
-const argv = tscop.cli();
+let argv;
+try {
+  argv = tscop.cli();
+} catch (e) {
+  if (e instanceof TimeSeriesCopError) {
+    console.log(`${e.name}: ${e.message}`);
+    process.exit(1);
+  } else {
+    throw e;
+  }
+}
 
 const headers = [
   'dateString', 'timeString', 'inputMinV', 'inputMaxV', 'inputHz', 'outputV', 'outputHz',
