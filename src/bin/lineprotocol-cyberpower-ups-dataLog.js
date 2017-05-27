@@ -17,6 +17,7 @@ try {
     throw e;
   }
 }
+startIndex = argv.skip === undefined ? 0 : argv.skip;
 
 const headers = [
   'dateString', 'timeString', 'inputMinV', 'inputMaxV', 'inputHz', 'outputV', 'outputHz',
@@ -42,7 +43,8 @@ if (argv.output) {
 try {
   let pipeline = tscop.fieldStream({
     instream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
-    delimiter:'\t'
+    delimiter:'\t',
+    start: startIndex
   })
   .filter(o => o.fields.length && o.fields[0] !== 'Date') // ignore header line
   .through(tscop.fieldsToDoc(headers))
@@ -56,7 +58,8 @@ try {
     schema: outputSchema,
     host: argv.host,
     database: argv.db,
-    outstream: outstream
+    outstream: outstream,
+    batchSize: argv.batchSize
   }));  // saveData consumes and ends the stream
 }
 catch (e) {

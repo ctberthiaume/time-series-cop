@@ -32,6 +32,13 @@ function baseCli() {
     .nargs('d', 1)
     .implies('db', 'host')
     .implies('host', 'db')
+    .describe('b', 'InfluxDB import batch size. For large imports this can be expensive due to downsampling queries firing after every batch.')
+    .alias('b', 'batchSize')
+    .nargs('b', 1)
+    .default('b', 10000)
+    .describe('s', 'Skip the first N lines. Useful if you want to skip headers or have a large import and want to use a small batchSize without firing too many downsampling queries.')
+    .alias('s', 'skip')
+    .nargs('s', 1)
     .group(['host', 'db'], 'InfluxDB Write Options')
     .check((argv, options) => {
       if (argv.measurement && !validation.validateMeasurement(argv.measurement)) {

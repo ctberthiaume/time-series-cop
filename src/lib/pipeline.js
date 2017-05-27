@@ -1,5 +1,6 @@
 const fs = require('fs');
 const H = require('highland');
+const moment = require('moment');
 const CSV = require('csv-string');
 const _ = require('lodash');
 const eolFix = require('eol-fix-stream');
@@ -333,7 +334,8 @@ exports.prepDocForInfluxDB = prepDocForInfluxDB;
  * become fields. Should not contain a time property.
  * @param {string} host InfluxDB host name
  * @param {string} database InfluxDB database name
- * @param {string} [batchSize=10000] How many points to write at a time
+ * @param {number} [batchSize=10000] How many points to write at a time
+ * @param {number} [windowSize=3] InfluxDB GROUP BY time() window size in minutes
  * @returns {Object} Highland stream transform function for use with through()
  */
 function writeDocToInfluxDB({
@@ -341,39 +343,85 @@ function writeDocToInfluxDB({
   schema=null,
   host=null,
   database=null,
-  batchSize=10000
+  batchSize=10000,
+  windowSize=3  // in minutes
 } = {}) {
+  windowSize = parseInt(windowSize);
   // Validate schema types
   const schemaValidation = validation.validateSchema(schema);
   if (schemaValidation.error) {
     throw new TimeSeriesCopError(`${validation.errorPrefix} Invalid type '${schemaValidation.error}'`);
   }
   schema = schemaValidation.schema;  // set validated, case-normalized schema
+  const influxSchema = schema2InfluxSchema(schema, measurement);
+
+  // To keep tags after downsampling query we have to explicitly name them in
+  // the GROUP BY after time()
+  let taglist;
+  if (influxSchema.tags.length) {
+    taglist = ',' + influxSchema.tags.map(t => `"${t}"`).join(',');
+  }
+  // Now to get around the fact that influxdb will rename fields to
+  // mean_originalname if we use a * wildcard as field selector, we
+  // need to explicitly construct a selector for all numeric fields
+  // with AS to keep the original name.
+  const fieldSelector = _.keys(influxSchema.fields).filter(f => {
+    return (influxSchema.fields[f] === Influx.FieldType.INTEGER || influxSchema.fields[f] === Influx.FieldType.FLOAT);
+  }).map(f => `MEAN("${f}") AS "${f}"`).join(',');
+
   const influx = new Influx.InfluxDB({
     host,
     database,
-    schema: [
-      schema2InfluxSchema(schema, measurement)
-    ]
+    schema: [ influxSchema ]
   });
 
   return (stream) => {
     return stream
       .through(prepDocForInfluxDB({measurement, schema}))
-      .batch(batchSize)
+      .batch(parseInt(batchSize))
       .map(points => points.sort((a, b) => a.timestamp - b.timestamp))
       .flatMap(points => {
-        return H(
-          influx.ping(5000).then(hosts => {
-            hosts.forEach(host => {
-              if (!host.online) {
-                throw new Error('Could not connect to database ' + host.url.host);
-              }
+        if (windowSize) {
+          // Downsample to time resolution of windowSize minutes
+          // First get the time range
+          const first = moment.utc(_.first(points).timestamp);
+          const last = moment.utc(_.last(points).timestamp);
+          // Move first point back by 1 window
+          first.subtract(windowSize, 'minutes');
+
+          return H(
+            influx.ping(5000).then(hosts => {
+              hosts.forEach(host => {
+                if (!host.online) {
+                  throw new Error('Could not connect to database ' + host.url.host);
+                }
+              })
+            }).then(() => {
+              influx.writePoints(points, { precision: 'ms' });
+            }).then(() => {
+              influx.query(`
+                SELECT ${fieldSelector}
+                INTO "viz"."autogen"."${measurement}"
+                FROM "${measurement}"
+                WHERE time >= '${first.toISOString()}' AND time <= '${last.toISOString()}'
+                GROUP BY time(${windowSize}m)${taglist};
+              `);
             })
-          }).then(() => {
-            influx.writePoints(points, { precision: 'ms' });
-          })
-        );
+          );
+        } else {
+          // Don't run downsampling query
+          return H(
+            influx.ping(5000).then(hosts => {
+              hosts.forEach(host => {
+                if (!host.online) {
+                  throw new Error('Could not connect to database ' + host.url.host);
+                }
+              })
+            }).then(() => {
+              influx.writePoints(points, { precision: 'ms' });
+            })
+          );
+        }
       });
   };
 }
@@ -384,7 +432,9 @@ function saveData({
   schema=null,
   host=null,
   database=null,
-  outstream=null
+  outstream=null,
+  batchSize=10000,
+  windowSize=3
 } = {}) {
   let count = 0;
   let error;
@@ -399,7 +449,9 @@ function saveData({
         measurement,
         schema,
         host,
-        database
+        database,
+        batchSize,
+        windowSize
       }));
     } else {
       stream = stream.through(writeDocToLineProtocol({

@@ -17,6 +17,8 @@ try {
     throw e;
   }
 }
+// Skip header line
+startIndex = argv.skip === undefined ? 1 : argv.skip;
 
 const headers = [ 'time', 'timestamp', 'O2Ar' ];
 const types = [ 'time', 'float', 'float' ];
@@ -35,7 +37,7 @@ if (argv.output) {
 try {
   let pipeline = tscop.fieldStream({
     instream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
-    start: 1,
+    start: startIndex,
     delimiter:'\t'
   })
   .doto(o => {
@@ -57,7 +59,8 @@ try {
     schema: outputSchema,
     host: argv.host,
     database: argv.db,
-    outstream: outstream
+    outstream: outstream,
+    batchSize: argv.batchSize
   }));  // saveData consumes and ends the stream
 }
 catch (e) {

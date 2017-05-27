@@ -17,6 +17,8 @@ try {
     throw e;
   }
 }
+// If not defined always skip the header line
+startIndex = argv.skip === undefined ? 1 : argv.skip;
 
 const headers = 'cruise,file,timestamp,lat,lon,opp_evt_ratio,flow_rate,file_duration,pop,n_count,abundance,fsc_small,chl_small,pe'.split(',');
 const types = [
@@ -40,7 +42,7 @@ if (argv.output) {
 try {
   let pipeline = tscop.fieldStream({
     instream: fs.createReadStream(argv.input, {encoding: 'utf8'}),
-    start: 1,
+    start: startIndex,
     delimiter:','
   })
   .through(tscop.fieldsToDoc(headers))
@@ -54,7 +56,8 @@ try {
     schema: outputSchema,
     host: argv.host,
     database: argv.db,
-    outstream: outstream
+    outstream: outstream,
+    batchSize: argv.batchSize
   }));  // saveData consumes and ends the stream
 }
 catch (e) {
