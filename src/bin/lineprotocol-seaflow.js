@@ -34,6 +34,11 @@ const schema = _.zipObject(headers, types);
 const outputSchema = _.zipObject(headers, types);
 outputSchema.cruise = 'category';
 outputSchema.time = 'time';
+delete outputSchema.timestamp;
+delete outputSchema.lat;
+delete outputSchema.lon;
+delete outputSchema.file;
+
 let outstream
 if (argv.output) {
   outstream = fs.createWriteStream(argv.output);
