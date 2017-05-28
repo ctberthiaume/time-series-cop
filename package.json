@@ -1,6 +1,6 @@
 {
   "name": "time-series-cop",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
   "repository": {
@@ -14,9 +14,9 @@
     "lineprotocol-standard-format": "./src/bin/lineprotocol-standard-format.js",
     "lineprotocol-cyberpower-ups-dataLog": "./src/bin/lineprotocol-cyberpower-ups-dataLog.js",
     "lineprotocol-seaflow": "./src/bin/lineprotocol-seaflow.js",
-    "lineprotocol-MGL1704-o2argon": "./src/bin/lineprotocol-MGL1704-o2argon.js",
-    "lineprotocol-MGL1704-cnav_33103-GPGGA": "./src/bin/lineprotocol-MGL1704-cnav_33103-GPGGA.js",
-    "lineprotocol-MGL1704-cnav_33103-GPVTG": "./src/bin/lineprotocol-MGL1704-cnav_33103-GPVTG.js"
+    "lineprotocol-o2argon": "./src/bin/lineprotocol-o2argon.js",
+    "lineprotocol-cnav_33103-GPGGA": "./src/bin/lineprotocol-cnav_33103-GPGGA.js",
+    "lineprotocol-cnav_33103-GPVTG": "./src/bin/lineprotocol-cnav_33103-GPVTG.js"
   },
   "yargs": {
     "duplicate-arguments-array": false
