@@ -396,34 +396,46 @@ function writeDocToInfluxDB({
 
           return H(
             influx.ping(5000).then(hosts => {
-              hosts.forEach(host => {
-                if (!host.online) {
-                  throw new Error('Could not connect to database ' + host.url.host);
-                }
-              })
+              return new Promise((resolve, reject) => {
+                setImmediate(() => {
+                  hosts.forEach(host => {
+                    if (!host.online) {
+                      reject(new Error('Could not connect to database ' + host.url.host));
+                    }
+                  });
+                  resolve();
+                });
+              });
             }).then(() => {
-              influx.writePoints(points, { precision: 'ms' });
+              return influx.writePoints(points, { precision: 'ms' });
             }).then(() => {
-              influx.query(`
+              const query = `
                 SELECT ${fieldSelector}
                 INTO "viz"."autogen"."${measurement}"
                 FROM "${measurement}"
                 WHERE time >= '${first.toISOString()}' AND time <= '${last.toISOString()}'
                 GROUP BY time(${windowSize}m)${taglist};
-              `);
+              `;
+              // console.log(query);
+              return influx.query(query);
             })
           );
         } else {
           // Don't run downsampling query
           return H(
             influx.ping(5000).then(hosts => {
-              hosts.forEach(host => {
-                if (!host.online) {
-                  throw new Error('Could not connect to database ' + host.url.host);
-                }
-              })
+              return new Promise((resolve, reject) => {
+                setImmediate(() => {
+                  hosts.forEach(host => {
+                    if (!host.online) {
+                      reject(new Error('Could not connect to database ' + host.url.host));
+                    }
+                  });
+                  resolve();
+                });
+              });
             }).then(() => {
-              influx.writePoints(points, { precision: 'ms' });
+              return influx.writePoints(points, { precision: 'ms' });
             })
           );
         }
