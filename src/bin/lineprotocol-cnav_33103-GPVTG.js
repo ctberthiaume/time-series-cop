@@ -20,8 +20,8 @@ try {
 // Skip header line
 startIndex = argv.skip === undefined ? 0 : argv.skip;
 
-const headers = [ 'time', 'timestamp', 'degrees_from_north', 'speed_knots', 'speed_kmph' ];
-const types = [ 'time', 'text', 'float', 'float', 'float' ];
+const headers = [ 'time', 'degrees_from_north', 'speed_knots', 'speed_kmph' ];
+const types = [ 'time', 'float', 'float', 'float' ];
 
 const schema = _.zipObject(headers, types);
 // Schema for output records. Should specify any properties which
@@ -49,7 +49,7 @@ try {
     const course = csv[1],
       knots = csv[5],
       kmph = csv[7];
-      o.fields = [ time, timestamp, course, knots, kmph ];
+      o.fields = [ time, course, knots, kmph ];
   })
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))

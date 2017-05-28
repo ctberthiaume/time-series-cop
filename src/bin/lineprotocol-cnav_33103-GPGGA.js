@@ -20,8 +20,8 @@ try {
 // Skip header line
 startIndex = argv.skip === undefined ? 0 : argv.skip;
 
-const headers = [ 'time', 'timestamp', 'latitude', 'longitude', 'gps_quality', 'satellites', 'altitude', 'geoidal_separation' ]; //'course', 'speed_knots', 'speed_km' ];
-const types = [ 'time', 'text', 'float', 'float', 'integer', 'integer', 'float', 'float' ];
+const headers = [ 'time', 'latitude', 'longitude', 'gps_quality', 'satellites', 'altitude', 'geoidal_separation' ]; //'course', 'speed_knots', 'speed_km' ];
+const types = [ 'time', 'float', 'float', 'integer', 'integer', 'float', 'float' ];
 
 const schema = _.zipObject(headers, types);
 // Schema for output records. Should specify any properties which
@@ -52,7 +52,7 @@ try {
       satn = csv[7],
       alt = csv[9],
       geoidalsep = csv[11];
-      o.fields = [ time, timestamp, latdd, londd, qual, satn, alt, geoidalsep ];
+      o.fields = [ time, latdd, londd, qual, satn, alt, geoidalsep ];
   })
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))
