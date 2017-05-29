@@ -158,11 +158,13 @@ function validateDoc(schema, strict) {
             if (validator[schema[k]] === undefined) {
               throw new TimeSeriesCopError(`Invalid type '${schema[k]}'`);
             }
-            const v = validator[schema[k]](o.origDoc[k]);
-            if (v.error) {
-              throw new TimeSeriesCopError(`${v.error} on line ${o.lineIndex + 1}. column=${k}, value=${o.origDoc[k]}, type=${schema[k]}`);
+            if (o.origDoc[k] !== null) {
+              const v = validator[schema[k]](o.origDoc[k].trim());
+              if (v.error) {
+                throw new TimeSeriesCopError(`${v.error} on line ${o.lineIndex + 1}. column=${k}, value=${o.origDoc[k]}, type=${schema[k]}`);
+              }
+              o.doc[k] = v.value;
             }
-            o.doc[k] = v.value;
           }
         });
       });

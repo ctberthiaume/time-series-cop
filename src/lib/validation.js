@@ -13,18 +13,18 @@ function validated(msg, val) {
 // set to null. All validators return two an object:
 // {
 //   error: {string} or null,
-//   value: original value (possibly trimmed for text/category) or null if 'NA' or 'NaN'
+//   value: original value (upper cased for boolean) or null if 'NA' or 'NaN'
 // }
 const strict = {
   text(value) {
     if (isMissing(value)) return { error: null, value: null };
     if (value === '') return { error: 'Empty text value', value };
-    return { error: null, value: value.trim() };  // remove leading/trailing whitespace
+    return { error: null, value };  // remove leading/trailing whitespace
   },
   category(value) {
     if (isMissing(value)) return { error: null, value: null };
     if (value === '') return { error: 'Empty category value', value };
-    return { error: null, value: value.trim() };  // remove leading/trailing whitespace
+    return { error: null, value };  // remove leading/trailing whitespace
   },
   float(value) {
     if (validator.isFloat(value)) return { error: null, value };
@@ -39,6 +39,7 @@ const strict = {
     return { error: 'Not an integer', value };
   },
   boolean(value) {
+    value = value.toUpperCase();
     if (value === 'TRUE' || value === 'FALSE') return { error: null, value };
     if (isMissing(value)) return { error: null, value: null };
     if (value === '') return { error: 'Empty boolean value', value };
@@ -56,15 +57,15 @@ function isMissing(value) {
 }
 
 // If value fails validation, set to null. Otherwise return the original value,
-// (possibly trimmed for text/category) or in the case of boolean 'TRUE' or 'FALSE'
+// or in the case of boolean 'TRUE' or 'FALSE'
 const lax = {
   text(value) {
     if (value === '') value = null;
-    return { error: null, value: value.trim() };  // remove leading/trailing whitespace
+    return { error: null, value };  // remove leading/trailing whitespace
   },
   category(value) {
     if (value === '') value = null;
-    return { error: null, value: value.trim() };  // remove leading/trailing whitespace
+    return { error: null, value };  // remove leading/trailing whitespace
   },
   float(value) {
     if (!validator.isFloat(value)) value = null;
