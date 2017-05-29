@@ -45,6 +45,30 @@ describe('Standard Format', function() {
         expect(result.header).to.exist;
       });
   });
+  it('should produce one line of line protocol with whitespace around time', function() {
+    const input = [
+      'fileType\n',
+      'cruise\n',
+      'description\n',
+      'desc1,desc2,des3,desc4,desc5,desc6\n',
+      'time,float,integer,text,category,boolean\n',
+      'NA,m/s,km,NA,NA,NA\n',
+      'time,speed,distance,notes,group,flag\n',
+      '   2017-05-06T19:52:57.601Z ,6.0,10,some notes,A,TRUE\n'
+    ];
+    return parser.getStandardHeader(input, ',')
+      .then(header => parser.validateStandardHeader(header))
+      .then(header => parser.parseStandardBody(input, output, header, ','))
+      .then(result => {
+        expect(outArray).to.have.length(1);
+        expect(outArray).to.have.deep.property(
+          '[0]',
+          'fileType,group=A,cruise=cruise speed=6.0,distance=10i,notes="some notes",flag=TRUE 1494100377601000000\n'
+        );
+        expect(result).to.have.deep.property('points', 1);
+        expect(result.header).to.exist;
+      });
+  });
   it('should produce one line of line protocol with types whitespace padded', function() {
     const input = [
       'fileType\n',
