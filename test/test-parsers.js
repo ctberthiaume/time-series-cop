@@ -404,7 +404,7 @@ describe('Standard Format', function() {
       'desc1,desc2\n',
       'time,float\n',
       'NA,m/s\n',
-      'time,NA\n',
+      'time,NaN\n',
       '2017-05-06T19:52:57.601Z,NA\n'
     ];
     return expect(
