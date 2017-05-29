@@ -159,6 +159,7 @@ function validateStandardHeader(origheader) {
   }
   if (header.types.record && header.types.record.fields) {
     header.types.data = header.types.record.fields.map(t => t.toLowerCase());  // normalize types to lower case
+    header.types.data = header.types.record.fields.map(t => t.trim());  // remove leading/trailing whitespace
   }
   if (header.units.record && header.units.record.fields) {
     header.units.data = header.units.record.fields;
@@ -198,8 +199,8 @@ function validateStandardHeader(origheader) {
     throw new TimeSeriesCopError(`${validation.errorPrefix} Lines ${columnarLines.join(',')} must have the same column numbers`);
   }
 
-  if (_.includes(header.headers.data, 'NA')) {
-    throw new TimeSeriesCopError(`${validation.errorPrefix} 'NA' is not a valid column header on line ${header.headers.record.lineIndex+1}`);
+  if (! header.headers.data.every(h => !validation.isMissing(h))) {
+    throw new TimeSeriesCopError(`${validation.errorPrefix} 'NA' or 'NaN' are not valid column headers on line ${header.headers.record.lineIndex+1}`);
   }
   if (header.headers.data[0] !== 'time') {
     throw new TimeSeriesCopError(`${validation.errorPrefix} The first headers value on line ${header.headers.record.lineIndex+1} should be 'time'`);

@@ -17,6 +17,7 @@ exports.writeDocToInfluxDB = pipeline.writeDocToInfluxDB;
 exports.saveData = pipeline.saveData;
 exports.validateTypeArray = validation.validateTypeArray;
 exports.errorPrefix = validation.errorPrefix;
+exports.isMissing = validation.isMissing;
 exports.GGAToDecimalDegrees = geo.GGAToDecimalDegrees;
 exports.parseStandardFile = parser.parseStandardFile;
 exports.parseStandardFileToDB = parser.parseStandardFileToDB;
