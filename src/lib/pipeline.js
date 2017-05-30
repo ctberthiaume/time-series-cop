@@ -159,7 +159,7 @@ function validateDoc(schema, strict) {
               throw new TimeSeriesCopError(`Invalid type '${schema[k]}'`);
             }
             if (o.origDoc[k] !== null) {
-              const v = validator[schema[k]](o.origDoc[k].trim());
+              const v = validator[schema[k]](_.isString(o.origDoc[k]) ? o.origDoc[k].trim() : o.origDoc[k]);
               if (v.error) {
                 throw new TimeSeriesCopError(`${v.error} on line ${o.lineIndex + 1}. column=${k}, value=${o.origDoc[k]}, type=${schema[k]}`);
               }
