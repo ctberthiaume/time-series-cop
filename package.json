@@ -1,6 +1,6 @@
 {
   "name": "time-series-cop",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
   "repository": {
