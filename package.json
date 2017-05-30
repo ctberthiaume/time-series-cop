@@ -17,7 +17,7 @@
     "lineprotocol-o2argon": "./src/bin/lineprotocol-o2argon.js",
     "lineprotocol-cnav_33103-GPGGA": "./src/bin/lineprotocol-cnav_33103-GPGGA.js",
     "lineprotocol-cnav_33103-GPVTG": "./src/bin/lineprotocol-cnav_33103-GPVTG.js",
-    "lineprotocol-cnav_33103-GPVTG": "./src/bin/lineprotocol-tsgraw_33721.js"
+    "lineprotocol-tsgraw_33721": "./src/bin/lineprotocol-tsgraw_33721.js"
   },
   "yargs": {
     "duplicate-arguments-array": false
