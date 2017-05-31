@@ -46,7 +46,7 @@ try {
   .doto(o => {
     const timestamp = o.fields[1];
     const time = moment.utc(timestamp, 'YYYY:DDD:HH:mm:ss.SS');
-    const par = o.fields[2];
+    const par = o.fields[2].substr(0, o.fields[2].length-1);
     o.fields = [ time, par ];
   })
   .through(tscop.fieldsToDoc(headers))
