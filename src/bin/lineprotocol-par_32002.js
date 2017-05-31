@@ -20,8 +20,8 @@ try {
 // Skip header line
 startIndex = argv.skip === undefined ? 0 : argv.skip;
 
-const headers = [ 'time', 'sstemp', 'conductivity', 'salinity', 'sound_velocity', 'sstemp_bow' ];
-const types = [ 'time', 'float', 'float', 'float', 'float', 'float' ];
+const headers = [ 'time', 'par' ];
+const types = [ 'time', 'float' ];
 
 const schema = _.zipObject(headers, types);
 // Schema for output records. Should specify any properties which
@@ -35,7 +35,7 @@ if (argv.output) {
 }
 
 // Sample of line format:
-// tsgraw	2017:150:04:54:47.8285	t1= 25.3496, c1= 5.10864, s= 33.2747, sv=1532.951, t2= 25.1663
+// par	2017:151:07:30:30.8640	-0.019, 21.45, 12.567
 
 try {
   let pipeline = tscop.fieldStream({
@@ -47,12 +47,8 @@ try {
   .doto(o => {
     const timestamp = o.fields[1];
     const time = moment.utc(timestamp, 'YYYY:DDD:HH:mm:ss.SS');
-    const sstemp = o.fields[3].substr(0, o.fields[3].length-1),
-      conductivity = o.fields[5].substr(0, o.fields[5].length-1),
-      salinity = o.fields[7].substr(0, o.fields[7].length-1),
-      sound_velocity = o.fields[8].substr(3, o.fields[8].length-1),
-      sstemp_bow = o.fields[10];
-    o.fields = [ time, sstemp, conductivity, salinity, sound_velocity, sstemp_bow ];
+    const par = o.fields[2];
+    o.fields = [ time, par ];
   })
   .through(tscop.fieldsToDoc(headers))
   .through(tscop.validateDoc(schema, false))
