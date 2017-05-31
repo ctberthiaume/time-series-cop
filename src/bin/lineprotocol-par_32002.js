@@ -43,7 +43,6 @@ try {
     start: startIndex,
     delimiter: 'whitespace'
   })
-  .filter(o => { return o.fields.length === 11 })
   .doto(o => {
     const timestamp = o.fields[1];
     const time = moment.utc(timestamp, 'YYYY:DDD:HH:mm:ss.SS');
