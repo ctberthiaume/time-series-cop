@@ -45,13 +45,11 @@ try {
   })
   .doto(o => {
     const timestamp = o.fields[1];
-    const time = moment.utc(timestamp, 'YYYY:DDD:HH:mm:ss.SS');
+    const time = moment.utc(timestamp);
     // Apply calibrations to raw Voltages and write back as strings
     const chlorophyll = (0.0072 * (parseInt(o.fields[6]) - 42)).toString();
     const scattering = (1.611e-6 * (parseInt(o.fields[8]) - 42)).toString();
     const cdom = (0.0901 * (parseInt(o.fields[10]) - 34)).toString();
-
-    const par = o.fields[2].substr(0, o.fields[2].length-1);
     o.fields = [ time, chlorophyll, scattering, cdom ];
   })
   .through(tscop.fieldsToDoc(headers))
