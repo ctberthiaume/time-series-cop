@@ -241,6 +241,8 @@ function writeDocToLineProtocol({
       // If no fields present, mark missing data with 'influxMissingData' field
       if (Object.keys(fields).length === 0) {
         fields.influxMissingData = true;
+      } else {
+        fields.influxMissingData = false;
       }
 
       // Timestamp must be present
@@ -315,6 +317,8 @@ function prepDocForInfluxDB({measurement=null, schema=null} = {}) {
         // If no fields present, mark missing data with 'influxMissingData' field
         if (_.keys(fields).length === 0) {
           fields.influxMissingData = true;
+        } else {
+          fields.influxMissingData = false;
         }
 
         // Timestamp must be present
