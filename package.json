@@ -1,6 +1,6 @@
 {
   "name": "time-series-cop",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "Time wrangler",
   "main": "src/lib/index.js",
   "repository": {
@@ -20,7 +20,9 @@
     "lineprotocol-cnav_33103-GPVTG": "./src/bin/lineprotocol-cnav_33103-GPVTG.js",
     "lineprotocol-tsgraw_33721": "./src/bin/lineprotocol-tsgraw_33721.js",
     "lineprotocol-par_32002": "./src/bin/lineprotocol-par_32002.js",
-    "lineprotocol-ecotriplet": "./src/bin/lineprotocol-ecotriplet.js"
+    "lineprotocol-ecotriplet": "./src/bin/lineprotocol-ecotriplet.js",
+    "lineprotocol-thsl_wfix": "./src/bin/lineprotocol-thsl_wfix.js",
+    "lineprotocol-thsl_wfix-geo": "./src/bin/lineprotocol-thsl_wfix-geo.js"
   },
   "yargs": {
     "duplicate-arguments-array": false
