@@ -3,6 +3,7 @@
 const fs = require('fs')
   moment = require('moment'),
   _ = require('lodash'),
+  H = require('highland'),
   tscop = require('time-series-cop'),
   TimeSeriesCopError = require('time-series-cop').TimeSeriesCopError;
 
@@ -11,7 +12,7 @@ argv.skip = argv.skip === undefined ? 0 : argv.skip;
 
 const headers = [
   'year', 'julian', 'hour', 'minute', 'second', 'millisecond', 'label', 'latitude',
-  'longitude', 'sstemp', 'conductivity', 'salinity', 'sstemp_bow'
+  'longitude', 'temperature1', 'conductivity', 'salinity', 'temperature2'
 ];
 const types = [
   'integer', 'integer', 'integer', 'integer', 'integer', 'integer', 'text', 'float', 'float',
@@ -22,19 +23,56 @@ const types = [
 // were added in the transform pipeline. Should only contain properties to be
 // included in InfluxDB records.
 const schema = _.zipObject(headers, types);
-const outputSchema = _.zipObject(headers, types);
-outputSchema.cruise = 'category';
-outputSchema.time = 'time';
-delete outputSchema.year;
-delete outputSchema.julian;
-delete outputSchema.hour;
-delete outputSchema.minute;
-delete outputSchema.second;
-delete outputSchema.millisecond;
-delete outputSchema.label;
-delete outputSchema.latitude;
-delete outputSchema.longitude;
-outputSchema.sound_velocity = 'float';
+const outputSchema = {
+  'cruise': 'category',
+  'time': 'time',
+  'speed_knots': 'float',
+  'speed_kmph': 'float'
+};
+
+// Aggregate points into speed every five minutes
+const speedAgg = () => {
+  let prev;
+  return (err, o, push, next) => {
+    if (err) {
+      push(err);
+      next();
+    } else if (o === H.nil) {
+      push(null, o);  // pass along stream end
+    } else {
+      if (prev !== undefined) {
+        let delta_m = moment.duration(prev.doc.time - o.doc.time).asMinutes();
+        if (Math.abs(delta_m) > 5) {
+          let p1 = [+prev.doc.longitude, +prev.doc.latitude ];
+          let p2 = [+o.doc.longitude, +o.doc.latitude ];
+          let t1 = prev.doc.time.valueOf();
+          let t2 = o.doc.time.valueOf();
+
+          let kmph = tscop.geo2kmph(p1, p2, t1, t2);
+          let knots = kmph / 1.852;
+          // Set time to halfway between t1 and t2
+          let time = moment.utc((prev.doc.time.valueOf() + o.doc.time.valueOf())/2);
+          let record = {
+            doc: {
+              cruise: argv.cruise,
+              time: time,
+              speed_knots: knots,
+              speed_kmph: kmph
+            },
+            lineIndex: o.lineIndex,
+            recordIndex: o.recordIndex
+          };
+          // Push current record
+          push(null, record);
+          prev = o;
+        }
+      } else {
+        prev = o;
+      }
+      next();
+    }
+  };
+};
 
 let outstream;
 if (argv.output) {
@@ -61,6 +99,7 @@ try {
     o.doc.time = time;
     o.doc.cruise = argv.cruise;
   })
+  .consume(speedAgg())
   .through(tscop.saveData({
     measurement: argv.measurement,
     schema: outputSchema,
